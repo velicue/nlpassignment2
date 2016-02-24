@@ -39,15 +39,54 @@ public class ProperNameTester {
 		public Counter<String> extractFeatures(String name) {
 			char[] characters = name.toCharArray();
 			Counter<String> features = new Counter<String>();
-			// add character unigram features
-			for (int i = 0; i < characters.length; i++) {
-				char character = characters[i];
-				features.incrementCount("UNI-" + character, 1.0);
+			
+			int len = characters.length;
+			// add character ngram features
+			for (int i = 0; i < len; i++) {
+				String ngram = "";
+				for (int j = 0; j < 4; j++) {
+					if (i + j >= len) break;
+					ngram += characters[i + j];
+					features.incrementCount(j + "GRAM-" + ngram, 1.0);
+				}
 			}
-			// TODO : extract better features!
-			// TODO
-			// TODO
-			// TODO
+			
+			// length & num of capital letters
+			int countUppercase = 0;
+			for (int i = 0; i < len; i++) {
+				if (characters[i] >= 'A' && characters[i] <= 'Z') countUppercase++;
+			}
+			features.incrementCount("LENGTH-" + len, 1.0);
+			features.incrementCount("UPPER-" + countUppercase, 1.0);
+			for (int i = 3; i < 4; i++) {
+				if (len < i) continue;
+				String prefix = "";
+				String suffix = "";
+				for (int j = 0; j < i; j++) {
+					prefix += characters[j];
+					suffix += characters[len - j - 1];
+				}
+				features.incrementCount("PREFIX-" + i + prefix, 1.0);
+				features.incrementCount("SUFFIX-" + i + suffix, 1.0);
+			}
+			
+			
+			boolean foundDigit = false;
+			int countSpace = 0;
+			boolean foundDash = false;
+			for (int i = 0; i < len; i++) {
+				if (characters[i] >= '0' && characters[i] <= '9') foundDigit = true;
+				if (characters[i] == ' ') countSpace++;
+				if (characters[i] == '-') foundDash = true;
+			}
+			if (foundDigit) 
+				features.incrementCount("HASDIGIT", 1.0); 
+			features.incrementCount("SPACE-" + countSpace, 1.0);
+			if (foundDash) 
+				features.incrementCount("HASDASH", 1.0);
+			
+			
+			
 			return features;
 		}
 	}
