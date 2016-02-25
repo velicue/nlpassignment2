@@ -85,7 +85,18 @@ public class ProperNameTester {
 			if (foundDash) 
 				features.incrementCount("HASDASH", 1.0);
 			
+			/*
+			String []dict = new String[] {"John", "William", "St", "James", "George", "Sir", "Paul", "Charles", "Henry","Robert","Inc", "Corporation", "Fund", "Co", "Trust", "", "Group","Income", "Corp", "Cap", "I","St", "West", "La", "Bay", "Hill", "North", "Le", "Bad", "New","South", "East","Bridge","Point","Strength", "10", "Caplets", "12", "13", "with", "15", "Plus", "Cold","Gel", "Formula", "DM", "The", "the", "a", "and", "A", "de", "in", "La", "to"};
 			
+			int amount = 23;
+			for (int i = 0; i < dict.length; i++) {
+				String word = dict[i];
+				if (name.contains(word))
+				{
+					features.incrementCount("DICT-" + word, 1.0);
+				}
+			}
+			*/
 			
 			return features;
 		}
@@ -188,6 +199,10 @@ public class ProperNameTester {
 					.trainClassifier(trainingData);
 		} else if (model.equalsIgnoreCase("n-gram")) {
 			// TODO: construct your n-gram model here
+		} else if (model.equalsIgnoreCase("perceptron")){
+			ProbabilisticClassifierFactory<String, String> factory = new PerceptronClassifier.Factory<String, String, String>(
+					1.0, 20, new ProperNameFeatureExtractor());
+			classifier = factory.trainClassifier(trainingData);
 		} else if (model.equalsIgnoreCase("maxent")) {
 			// TODO: construct your maxent model here
 			ProbabilisticClassifierFactory<String, String> factory = new MaximumEntropyClassifier.Factory<String, String, String>(

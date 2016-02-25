@@ -22,8 +22,10 @@ import nlp.util.Pair;
  * <p/>
  * This will run a toy test classification.
  */
-public class MaximumEntropyClassifier<I, F, L> implements
+public class PerceptronClassifier<I, F, L> implements
 		ProbabilisticClassifier<I, L> {
+	
+	
 
 	/**
 	 * Factory for training MaximumEntropyClassifiers.
@@ -34,6 +36,43 @@ public class MaximumEntropyClassifier<I, F, L> implements
 		double sigma;
 		int iterations;
 		FeatureExtractor<I, F> featureExtractor;
+		
+		public static<F, L> double[] train(double[] iw, EncodedDatum[] data, Encoding<F, L> encoding, IndexLinearizer indexLinearizer)
+		{
+			double[] weights = iw;
+			int iter = 1000;
+			while (iter-- > 0)
+			{
+				int countCorrect = 0;
+				for (EncodedDatum datum: data)
+				{
+					int maxdotprod = -2147483647;
+					int pred = -1;
+					int numLabels = encoding.getNumLabels();
+					int n = datum.getNumActiveFeatures();
+					for (int j = 0; j < numLabels; j++) {
+						int dotprod = 0;
+						for (int i = 0; i < n; i++) {
+							dotprod += weights[indexLinearizer.getLinearIndex(datum.getFeatureIndex(i), j)] * datum.getFeatureCount(i);
+						}
+						if (dotprod > maxdotprod) {
+							maxdotprod = dotprod;
+							pred = j;
+						}
+					}
+					if (pred == datum.getLabelIndex()) {
+						countCorrect++;
+						continue;
+					}
+					for (int i = 0; i < n; i++) {
+						weights[indexLinearizer.getLinearIndex(datum.getFeatureIndex(i), pred)] -= datum.getFeatureCount(i);
+						weights[indexLinearizer.getLinearIndex(datum.getFeatureIndex(i), datum.getLabelIndex())] += datum.getFeatureCount(i);
+					}
+				}
+				System.out.println(countCorrect);
+			}
+			return weights;
+		}
 
 		public ProbabilisticClassifier<I, L> trainClassifier(
 				List<LabeledInstance<I, L>> trainingData) {
@@ -43,15 +82,16 @@ public class MaximumEntropyClassifier<I, F, L> implements
 			double[] initialWeights = buildInitialWeights(indexLinearizer);
 			EncodedDatum[] data = encodeData(trainingData, encoding);
 			// build a minimizer object
+			/*
 			GradientMinimizer minimizer = new LBFGSMinimizer(iterations);
 			// build the objective function for this data
 			DifferentiableFunction objective = new ObjectiveFunction<F, L>(
 					encoding, data, indexLinearizer, sigma);
 			// learn our voting weights
-			double[] weights = minimizer.minimize(objective, initialWeights,
-					1e-4);
+			*/
+			double[] weights = train(initialWeights, data, encoding, indexLinearizer);
 			// build a classifier using these weights (and the data encodings)
-			return new MaximumEntropyClassifier<I, F, L>(weights, encoding,
+			return new PerceptronClassifier<I, F, L>(weights, encoding,
 					indexLinearizer, featureExtractor);
 		}
 
@@ -177,7 +217,7 @@ public class MaximumEntropyClassifier<I, F, L> implements
 			double[] derivatives = DoubleArrays.constantArray(0.0, dimension());
 			int numLabels = encoding.getNumLabels();
 			for (EncodedDatum datum: data) {
-				double []logProbabilities = MaximumEntropyClassifier.getLogProbabilities(datum, x, encoding, indexLinearizer);
+				double []logProbabilities = PerceptronClassifier.getLogProbabilities(datum, x, encoding, indexLinearizer);
 				objective -= logProbabilities[datum.getLabelIndex()];
 				double maxLogProbability = Double.NEGATIVE_INFINITY;
 				/*
@@ -441,7 +481,7 @@ public class MaximumEntropyClassifier<I, F, L> implements
 		return getProbabilities(input).argMax();
 	}
 
-	public MaximumEntropyClassifier(double[] weights, Encoding<F, L> encoding,
+	public PerceptronClassifier(double[] weights, Encoding<F, L> encoding,
 			IndexLinearizer indexLinearizer,
 			FeatureExtractor<I, F> featureExtractor) {
 		this.weights = weights;
