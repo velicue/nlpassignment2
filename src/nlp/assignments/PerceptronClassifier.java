@@ -40,7 +40,8 @@ public class PerceptronClassifier<I, F, L> implements
 		public static<F, L> double[] train(double[] iw, EncodedDatum[] data, Encoding<F, L> encoding, IndexLinearizer indexLinearizer)
 		{
 			double[] weights = iw;
-			int iter = 1000;
+			int MAXITER = 800;
+			int iter = MAXITER;
 			while (iter-- > 0)
 			{
 				int countCorrect = 0;
@@ -69,7 +70,7 @@ public class PerceptronClassifier<I, F, L> implements
 						weights[indexLinearizer.getLinearIndex(datum.getFeatureIndex(i), datum.getLabelIndex())] += datum.getFeatureCount(i);
 					}
 				}
-				System.out.println(countCorrect);
+				System.out.println("Iter " + (MAXITER - iter) + ", number of correct predictions over training set: " + countCorrect);
 			}
 			return weights;
 		}
@@ -152,119 +153,6 @@ public class PerceptronClassifier<I, F, L> implements
 			this.sigma = sigma;
 			this.iterations = iterations;
 			this.featureExtractor = featureExtractor;
-		}
-	}
-
-	/**
-	 * This is the MaximumEntropy objective function: the (negative) log
-	 * conditional likelihood of the training data, possibly with a penalty for
-	 * large weights. Note that this objective get MINIMIZED so it's the
-	 * negative of the objective we normally think of.
-	 */
-	public static class ObjectiveFunction<F, L> implements
-			DifferentiableFunction {
-		IndexLinearizer indexLinearizer;
-		Encoding<F, L> encoding;
-		EncodedDatum[] data;
-
-		double sigma;
-
-		double lastValue;
-		double[] lastDerivative;
-		double[] lastX;
-
-		public int dimension() {
-			return indexLinearizer.getNumLinearIndexes();
-		}
-
-		public double valueAt(double[] x) {
-			ensureCache(x);
-			return lastValue;
-		}
-
-		public double[] derivativeAt(double[] x) {
-			ensureCache(x);
-			return lastDerivative;
-		}
-
-		private void ensureCache(double[] x) {
-			if (requiresUpdate(lastX, x)) {
-				Pair<Double, double[]> currentValueAndDerivative = calculate(x);
-				lastValue = currentValueAndDerivative.getFirst();
-				lastDerivative = currentValueAndDerivative.getSecond();
-				lastX = x;
-			}
-		}
-
-		private boolean requiresUpdate(double[] lastX, double[] x) {
-			if (lastX == null)
-				return true;
-			for (int i = 0; i < x.length; i++) {
-				if (lastX[i] != x[i])
-					return true;
-			}
-			return false;
-		}
-
-		/**
-		 * The most important part of the classifier learning process! This
-		 * method determines, for the given weight vector x, what the (negative)
-		 * log conditional likelihood of the data is, as well as the derivatives
-		 * of that likelihood wrt each weight parameter.
-		 */
-		private Pair<Double, double[]> calculate(double[] x) {
-			double objective = 0.0;
-			double[] derivatives = DoubleArrays.constantArray(0.0, dimension());
-			int numLabels = encoding.getNumLabels();
-			for (EncodedDatum datum: data) {
-				double []logProbabilities = PerceptronClassifier.getLogProbabilities(datum, x, encoding, indexLinearizer);
-				objective -= logProbabilities[datum.getLabelIndex()];
-				double maxLogProbability = Double.NEGATIVE_INFINITY;
-				/*
-				int predLabel = 0;
-				for (int i = 0; i < numLabels; i++) {
-					if (logProbabilities[i] > maxLogProbability) {
-						maxLogProbability = logProbabilities[i];
-						predLabel = i;
-					}
-				}
-				double predProb = Math.exp(logProbabilities[predLabel]);
-				*/
-				
-				int n = datum.getNumActiveFeatures();
-				
-				for (int j = 0; j < numLabels; j++) {
-					int I = 0;
-					if (j == datum.getLabelIndex()) I = 1;
-					for (int i = 0; i < n; i++) {
-						int featureIndex = datum.getFeatureIndex(i);
-						double featureCount = datum.getFeatureCount(i);
-						derivatives[indexLinearizer.getLinearIndex(featureIndex, j)] -= (I - Math.exp(logProbabilities[j])) * featureCount;
-					}
-				}
-			}
-			
-		
-			double wsquare = 0.0;
-			for (int i = 0; i < x.length; i++) {
-				wsquare += x[i] * x[i];
-			}
-			
-			objective += wsquare / (2 * sigma * sigma);
-			for (int i = 0; i < x.length; i++) {
-				derivatives[i] += x[i] / (sigma * sigma);
-			}
-
-
-			return new Pair<Double, double[]>(objective, derivatives);
-		}
-
-		public ObjectiveFunction(Encoding<F, L> encoding, EncodedDatum[] data,
-				IndexLinearizer indexLinearizer, double sigma) {
-			this.indexLinearizer = indexLinearizer;
-			this.encoding = encoding;
-			this.data = data;
-			this.sigma = sigma;
 		}
 	}
 

@@ -1,13 +1,17 @@
 package nlp.assignments;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import nlp.classify.*;
+import nlp.classify.FeatureExtractor;
+import nlp.classify.LabeledInstance;
+import nlp.classify.ProbabilisticClassifier;
+import nlp.classify.ProbabilisticClassifierFactory;
 import nlp.util.CommandLineUtils;
 import nlp.util.Counter;
 
@@ -71,6 +75,7 @@ public class ProperNameTester {
 			}
 			
 			
+			
 			boolean foundDigit = false;
 			int countSpace = 0;
 			boolean foundDash = false;
@@ -124,18 +129,42 @@ public class ProperNameTester {
 			List<LabeledInstance<String, String>> testData, boolean verbose) {
 		double numCorrect = 0.0;
 		double numTotal = 0.0;
+		
+		Map<String, Integer> labelIndex = new HashMap<String, Integer>();
+		int MAXN = 10;
+		int [][]confusionMatrix = new int[MAXN][MAXN];
+		int countIndex = 0;
+		int []confidenceCorrect = new int[10];
+		int []confidenceTotal = new int[10];
+		
 		for (LabeledInstance<String, String> testDatum : testData) {
 			String name = testDatum.getInput();
 			String label = classifier.getLabel(name);
+			String trueLabel = testDatum.getLabel();
+			
+			if (!labelIndex.containsKey(label))
+			{
+				labelIndex.put(label, countIndex++);
+			}
+			if (!labelIndex.containsKey(trueLabel))
+			{
+				labelIndex.put(trueLabel, countIndex++);
+			}
+			confusionMatrix[labelIndex.get(label)][labelIndex.get(trueLabel)]++;
+			
 			double confidence = classifier.getProbabilities(name).getCount(
 					label);
-			if (label.equals(testDatum.getLabel())) {
+			int confidenceLevel = (int) (confidence * 10);
+			confidenceTotal[confidenceLevel]++;
+			
+			if (label.equals(trueLabel)) {
 				numCorrect += 1.0;
+				confidenceCorrect[confidenceLevel]++;
 			} else {
 				if (verbose) {
 					// display an error
-					System.err.println("Error: " + name + " guess=" + label
-							+ " gold=" + testDatum.getLabel() + " confidence="
+					System.err.println("Error: " + name + "    guess=" + label
+							+ "    gold=" + testDatum.getLabel() + "    confidence="
 							+ confidence);
 				}
 			}
@@ -143,6 +172,26 @@ public class ProperNameTester {
 		}
 		double accuracy = numCorrect / numTotal;
 		System.out.println("Accuracy: " + accuracy);
+		
+		if (verbose) {	
+			System.out.println("Confusion Matrix:");
+			System.out.print(String.format("%1$10s", ""));
+			for (String label: labelIndex.keySet()) {
+				System.out.print(String.format("%1$10s", label));
+			}
+			System.out.println();
+			for (String label: labelIndex.keySet()) {
+				System.out.print(String.format("%1$10s", label));
+				for (String label2: labelIndex.keySet()) {
+					System.out.print(String.format("%1$10s", confusionMatrix[labelIndex.get(label)][labelIndex.get(label2)] + ""));
+				}
+				System.out.println();
+			}
+			for (int i = 0; i < 10; i++) {
+				System.out.println("Confidence Level " + i + ", Accuracy: " + (double)confidenceCorrect[i] / confidenceTotal[i]);
+			}
+		}
+		
 	}
 
 	public static void main(String[] args) throws IOException {
