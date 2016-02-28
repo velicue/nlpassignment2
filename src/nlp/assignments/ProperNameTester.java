@@ -51,7 +51,7 @@ public class ProperNameTester {
 				for (int j = 0; j < 4; j++) {
 					if (i + j >= len) break;
 					ngram += characters[i + j];
-					features.incrementCount(j + "GRAM-" + ngram, 1.0);
+					if (j >= 1) features.incrementCount(j + "GRAM-" + ngram, 1.0);
 				}
 			}
 			
@@ -70,8 +70,8 @@ public class ProperNameTester {
 					prefix += characters[j];
 					suffix += characters[len - j - 1];
 				}
-				features.incrementCount("PREFIX-" + i + prefix, 1.0);
-				features.incrementCount("SUFFIX-" + i + suffix, 1.0);
+				features.incrementCount("PREFIX-" + i + "-" + prefix, 1.0);
+				features.incrementCount("SUFFIX-" + i + "-" + suffix, 1.0);
 			}
 			
 			
@@ -84,24 +84,38 @@ public class ProperNameTester {
 				if (characters[i] == ' ') countSpace++;
 				if (characters[i] == '-') foundDash = true;
 			}
-			if (foundDigit) 
+			/*if (foundDigit) 
 				features.incrementCount("HASDIGIT", 1.0); 
+			*/
 			features.incrementCount("SPACE-" + countSpace, 1.0);
-			if (foundDash) 
+			
+			/* if (foundDash) 
 				features.incrementCount("HASDASH", 1.0);
+			*/
 			
 			/*
-			String []dict = new String[] {"John", "William", "St", "James", "George", "Sir", "Paul", "Charles", "Henry","Robert","Inc", "Corporation", "Fund", "Co", "Trust", "", "Group","Income", "Corp", "Cap", "I","St", "West", "La", "Bay", "Hill", "North", "Le", "Bad", "New","South", "East","Bridge","Point","Strength", "10", "Caplets", "12", "13", "with", "15", "Plus", "Cold","Gel", "Formula", "DM", "The", "the", "a", "and", "A", "de", "in", "La", "to"};
+			 * String []dict = new String[] {"John", "William", "St", "James", "George", "Sir", "Paul", "Charles", "Henry", "Robert", "Inc",
+										  "Corporation", "Fund", "Co", "Trust", "Group","Income", "Corp", "Cap", "I", "West", "La", "Bay",
+										  "Hill", "North", "Le", "Bad", "New", "South", "East", "Bridge", "Point", "Strength", 
+                                          "Caplets", "with", "Plus", "Cold", "Gel", "Formula", "DM", "The", "the", "a",
+                                          "and", "A", "de", "in", "La", "to", "of"};
+			 */
 			
-			int amount = 23;
-			for (int i = 0; i < dict.length; i++) {
-				String word = dict[i];
-				if (name.contains(word))
+			String []dict = new String[] {"James", "George", "Sir", "Paul", "Charles", "Henry", "Robert", "Inc",
+										  "Corporation", "Fund", "Co", "Trust", "Group","Income", "Corp", "Cap", "I", "West", "La", "Bay",
+										  "Hill", "North", "Le", "Bad", "New", "South", "East", "Bridge", "Point", "Strength", 
+                                          "Caplets", "with", "Plus", "Cold", "Gel", "Formula", "DM", "The", "the", "a",
+                                          "and", "A", "de", "in", "La", "to", "of"};
+			
+			for (int i = 0; i < 0; i++) {
+				String word = " " + dict[i] + " ";
+				String newname = " " + name.replaceAll("[^a-zA-Z ]", "") + " ";
+				if (newname.contains(word))
 				{
 					features.incrementCount("DICT-" + word, 1.0);
 				}
 			}
-			*/
+			
 			
 			return features;
 		}
@@ -150,11 +164,12 @@ public class ProperNameTester {
 			{
 				labelIndex.put(trueLabel, countIndex++);
 			}
-			confusionMatrix[labelIndex.get(label)][labelIndex.get(trueLabel)]++;
+			confusionMatrix[labelIndex.get(trueLabel)][labelIndex.get(label)]++;
 			
 			double confidence = classifier.getProbabilities(name).getCount(
 					label);
 			int confidenceLevel = (int) (confidence * 10);
+			if (confidenceLevel == 10) confidenceLevel--;
 			confidenceTotal[confidenceLevel]++;
 			
 			if (label.equals(trueLabel)) {
