@@ -84,14 +84,14 @@ public class ProperNameTester {
 				if (characters[i] == ' ') countSpace++;
 				if (characters[i] == '-') foundDash = true;
 			}
-			/*if (foundDigit) 
+			/* if (foundDigit) 
 				features.incrementCount("HASDIGIT", 1.0); 
 			*/
 			features.incrementCount("SPACE-" + countSpace, 1.0);
 			
-			/* if (foundDash) 
+			if (foundDash) 
 				features.incrementCount("HASDASH", 1.0);
-			*/
+			
 			
 			/*
 			 * String []dict = new String[] {"John", "William", "St", "James", "George", "Sir", "Paul", "Charles", "Henry", "Robert", "Inc",
